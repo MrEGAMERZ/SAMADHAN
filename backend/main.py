@@ -1,3 +1,11 @@
+"""
+VANTA - Governance Intelligence Platform (Backend Entry Point)
+============================================================
+This file initializes the FastAPI application, sets up the SQLite/MongoDB Mock ORM connection, 
+mounts all API routers, configures the WebSocket Connection Manager for real-time telemetry, 
+and serves static files for the frontend deployment.
+"""
+
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -15,10 +23,14 @@ import json
 from database import engine, Base, SessionLocal
 from seed_data import seed_db
 
-from routes import auth, complaints, officials, map, resolution, escalation, projects
+# Import routers
+from routes import auth, complaints, officials, map, resolution, escalation, projects, upload, transparency, tenders
 
 Base.metadata.create_all(bind=engine)
-seed_db()
+try:
+    seed_db()
+except Exception as e:
+    print(f"[WARN] seed_db() failed (DB may not be ready yet): {e}")
 
 app = FastAPI(
     title="SAMADHAN — Governance Intelligence Platform API",
@@ -34,6 +46,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response, JSONResponse
+import time
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["Content-Security-Policy"] = "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: *;"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app):
+        super().__init__(app)
+        self.rate_limits = {}
+        self.limit = 100  # requests
+        self.window = 60  # seconds
+
+    async def dispatch(self, request, call_next):
+        client_ip = request.client.host if request.client else "127.0.0.1"
+        current_time = time.time()
+        
+        # Clean up old entries periodically or just for this IP
+        if client_ip not in self.rate_limits:
+            self.rate_limits[client_ip] = []
+            
+        # Filter timestamps within the current window
+        self.rate_limits[client_ip] = [t for t in self.rate_limits[client_ip] if current_time - t < self.window]
+        
+        if len(self.rate_limits[client_ip]) >= self.limit:
+            return JSONResponse(status_code=429, content={"detail": "Too Many Requests"})
+            
+        self.rate_limits[client_ip].append(current_time)
+        return await call_next(request)
+
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware)
+
+# Mount routes
 app.include_router(auth.router)
 app.include_router(complaints.router)
 app.include_router(officials.router)
@@ -41,6 +95,15 @@ app.include_router(map.router)
 app.include_router(resolution.router)
 app.include_router(escalation.router)
 app.include_router(projects.router)
+app.include_router(upload.router)
+app.include_router(transparency.router)
+app.include_router(tenders.router)
+
+from fastapi.staticfiles import StaticFiles
+uploads_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public", "uploads")
+if not os.path.exists(uploads_path):
+    os.makedirs(uploads_path, exist_ok=True)
+app.mount("/public/uploads", StaticFiles(directory=uploads_path), name="uploads")
 
 
 class ConnectionManager:
@@ -190,4 +253,5 @@ if os.path.exists(dist_path):
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)

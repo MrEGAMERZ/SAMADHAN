@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastProvider } from './components/Toast';
+import LandingPage from './pages/LandingPage';
 import Portal from './pages/Portal';
 import CitizenLogin from './pages/CitizenLogin';
 import OfficialLogin from './pages/OfficialLogin';
@@ -23,6 +24,7 @@ import CitizenProfile from './pages/CitizenProfile';
 import OfficialProfile from './pages/OfficialProfile';
 import CitizenHome from './pages/CitizenHome';
 import CitizenAnalytics from './pages/CitizenAnalytics';
+import TransparencyLedger from './pages/TransparencyLedger';
 import NotFound from './pages/NotFound';
 import { AuthGuard } from './services/authGuard';
 import './App.css';
@@ -32,7 +34,8 @@ function App() {
     <ToastProvider>
       <Router>
       <Routes>
-        <Route path="/" element={<Portal />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/portal" element={<Portal />} />
         
         {/* Login Routes */}
         <Route path="/login/official" element={<OfficialLogin />} />
@@ -56,6 +59,7 @@ function App() {
             <Route path="/citizen/profile" element={<CitizenProfile />} />
             <Route path="/citizen/home" element={<CitizenHome />} />
             <Route path="/citizen/analytics" element={<CitizenAnalytics />} />
+            <Route path="/citizen/ledger" element={<TransparencyLedger />} />
           </Route>
         </Route>
 

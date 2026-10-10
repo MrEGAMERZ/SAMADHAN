@@ -47,6 +47,15 @@ const OfficialLogin = () => {
     }
   };
 
+  const handleBypass = () => {
+    localStorage.setItem('user_token', 'demo-mla-token');
+    localStorage.setItem('user_role', 'MLA');
+    localStorage.setItem('user_name', 'Hon. Demo MLA');
+    localStorage.setItem('user_id', 'mla-1234');
+    showToast('Bypassed login for demo!', 'success');
+    navigate('/mla/dashboard');
+  };
+
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -93,7 +102,7 @@ const OfficialLogin = () => {
   return (
     <div className="auth-container">
       <div className="auth-modal">
-        <Link to="/" className="back-link">
+        <Link to="/portal" className="back-link">
           <ArrowLeft size={16} /> Back to Portal
         </Link>
         
@@ -272,6 +281,15 @@ const OfficialLogin = () => {
             <div>MLA Feed: <code>mla@samadhan.gov.in</code></div>
             <div>Password: <code>password</code></div>
           </div>
+        </div>
+
+        <div style={{ marginTop: '1.5rem', borderTop: '1px solid #1E1E35', paddingTop: '1rem', textAlign: 'center' }}>
+          <button 
+            onClick={handleBypass}
+            style={{ background: '#1E1E35', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', width: '100%', fontWeight: 600 }}
+          >
+            Bypass Login (Hackathon Demo)
+          </button>
         </div>
       </div>
     </div>

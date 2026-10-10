@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Folder, PlusSquare, BarChart2,
-  Settings, HelpCircle, Shield, LogOut, UserCircle
+  Settings, HelpCircle, Shield, LogOut, UserCircle, Database
 } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import '../pages/Dashboard.css';
@@ -52,6 +52,10 @@ const CitizenLayout = () => {
           <NavLink to="/citizen/analytics" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
             <BarChart2 size={18} />
             Analytics
+          </NavLink>
+          <NavLink to="/citizen/ledger" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+            <Database size={18} />
+            Public Ledger
           </NavLink>
         </nav>
 

@@ -1,19 +1,32 @@
 import uuid
-from database import Base, Column, String, Integer, Float, Boolean, DateTime, ForeignKey, Text, JSON, relationship, func
+from sqlalchemy import (
+    Column,
+    String,
+    Float,
+    Integer,
+    Boolean,
+    DateTime,
+    Text,
+    ForeignKey,
+    JSON,
+    func,
+)
+from sqlalchemy.orm import relationship
+from database import Base
 
 
 class Citizen(Base):
     __tablename__ = "citizens"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    phone = Column(String, unique=True)
+    phone = Column(String, unique=True, index=True)
     name = Column(String, nullable=True)
     ward = Column(String, nullable=True)
     district = Column(String, nullable=True)
     location_lat = Column(Float, nullable=True)
     location_lng = Column(Float, nullable=True)
-    reward_points = Column(Integer, default=0)
-    created_at = Column(DateTime, default=func.now)
+    trust_score = Column(Integer, default=50)
+    created_at = Column(DateTime, default=func.now())
 
 
 class Official(Base):
@@ -21,17 +34,16 @@ class Official(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String)
-    role = Column(String)
-    jurisdiction = Column(String, nullable=True)
+    role = Column(String)  # MLA, COLLECTOR, MP, MINISTRY, PWD_ENGINEER
+    jurisdiction = Column(String)  # "Ward 7", "Bengaluru South", etc.
+    tier = Column(Integer, default=1)  # 1: Ward, 2: Zone/City, 3: State/District, 4: National
     phone = Column(String, nullable=True)
-    email = Column(String, unique=True)
-    password_hash = Column(String, default="password")
-    avg_response_time = Column(Float, default=0.0)
-    resolution_rate = Column(Float, default=0.0)
+    email = Column(String, unique=True, index=True)
+    password_hash = Column(String)
     complaints_assigned = Column(Integer, default=0)
     complaints_resolved = Column(Integer, default=0)
     accountability_score = Column(Integer, default=100)
-    created_at = Column(DateTime, default=func.now)
+    created_at = Column(DateTime, default=func.now())
 
 
 class Complaint(Base):
@@ -61,7 +73,7 @@ class Complaint(Base):
     is_duplicate_of = Column(String, nullable=True)
     duplicate_count = Column(Integer, default=0)
 
-    filed_at = Column(DateTime, default=func.now)
+    filed_at = Column(DateTime, default=func.now())
     assigned_at = Column(DateTime, nullable=True)
     first_viewed_at = Column(DateTime, nullable=True)
     first_response_at = Column(DateTime, nullable=True)
@@ -79,8 +91,10 @@ class Complaint(Base):
     near_dam = Column(Boolean, default=False)
     ai_photo_analysis = Column(JSON, nullable=True)
     is_fake_flagged = Column(Boolean, default=False)
-
-    resolution_status = Column(String, nullable=True)
+    risk_flags = Column(JSON, default=list)
+    
+    # Resolution fields
+    resolution_status = Column(String, nullable=True)  # PENDING/TEMP_FIX/VERIFIED/FALSE_CLOSURE
     resolution_note = Column(Text, nullable=True)
     resolution_photos = Column(JSON, default=list)
     resolution_action = Column(String, nullable=True)
@@ -95,13 +109,25 @@ class Complaint(Base):
     # of the intended data model. Access via direct queries instead.
 
 
+    def to_safe_dict(self):
+        d = self.to_dict()
+        d.pop("citizen_id", None)
+        d.pop("voice_file_url", None)
+        d["location_address"] = "Redacted for privacy"
+        if d.get("location_lat"): d["location_lat"] = round(d["location_lat"], 2)
+        if d.get("location_lng"): d["location_lng"] = round(d["location_lng"], 2)
+        # Avoid leaking exact resolution photos if private
+        d.pop("resolution_photos", None)
+        return d
+
+
 class Upvote(Base):
     __tablename__ = "upvotes"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     complaint_id = Column(String, ForeignKey("complaints.id"))
     citizen_id = Column(String, ForeignKey("citizens.id"))
-    filed_at = Column(DateTime, default=func.now)
+    filed_at = Column(DateTime, default=func.now())
 
 
 class EscalationLog(Base):
@@ -114,7 +140,7 @@ class EscalationLog(Base):
     from_official_id = Column(String, ForeignKey("officials.id"), nullable=True)
     to_official_id = Column(String, ForeignKey("officials.id"), nullable=True)
     reason = Column(Text, nullable=True)
-    escalated_at = Column(DateTime, default=func.now)
+    escalated_at = Column(DateTime, default=func.now())
 
 
 class VerificationLog(Base):
@@ -124,7 +150,7 @@ class VerificationLog(Base):
     complaint_id = Column(String, ForeignKey("complaints.id"))
     citizen_id = Column(String, ForeignKey("citizens.id"))
     vote = Column(Boolean)
-    voted_at = Column(DateTime, default=func.now)
+    voted_at = Column(DateTime, default=func.now())
 
 
 class DevelopmentProject(Base):
@@ -145,3 +171,58 @@ class DevelopmentProject(Base):
     rank = Column(Integer)
     approved = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now)
+
+    ledgers = relationship("TransparencyLedger", back_populates="project")
+
+class TransparencyLedger(Base):
+    """
+    Transparency Engine Model: Tracks public procurement, bids, milestone completions, 
+    and phase-wise payments for Development Projects.
+    """
+    __tablename__ = "transparency_ledgers"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = Column(String, ForeignKey("development_projects.id"))
+    contractor_name = Column(String)
+    bid_amount = Column(Float)
+    funds_released = Column(Float, default=0.0)
+    milestone_status = Column(String, default="CONTRACT_AWARDED") # CONTRACT_AWARDED, PHASE_1, PHASE_2, COMPLETED
+    phase_wise_payments = Column(JSON, default=list) # Array of payment dicts
+    last_updated = Column(DateTime, default=func.now)
+
+    project = relationship("DevelopmentProject", back_populates="ledgers")
+
+class Contractor(Base):
+    __tablename__ = "contractors"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    company_name = Column(String)
+    specialty = Column(String)
+    rating = Column(Float, default=0.0)
+    is_government_approved = Column(Boolean, default=True)
+
+class TenderInvitation(Base):
+    __tablename__ = "tender_invitations"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = Column(String, ForeignKey("development_projects.id"))
+    invited_by_official_id = Column(String, ForeignKey("officials.id"))
+    contractor_id = Column(String, ForeignKey("contractors.id"))
+    status = Column(String, default="PENDING") # PENDING, BID_SUBMITTED, REJECTED
+    invited_at = Column(DateTime, default=func.now)
+
+class TenderBid(Base):
+    __tablename__ = "tender_bids"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    invitation_id = Column(String, ForeignKey("tender_invitations.id"))
+    contractor_id = Column(String, ForeignKey("contractors.id"))
+    project_id = Column(String, ForeignKey("development_projects.id"))
+    bid_amount = Column(Float)
+    estimated_days = Column(Integer)
+    site_visit_completed = Column(Boolean, default=False)
+    ai_score = Column(Float, nullable=True) # AI analysis score
+    ai_reasoning = Column(Text, nullable=True)
+    is_awarded = Column(Boolean, default=False)
+    submitted_at = Column(DateTime, default=func.now)
+
