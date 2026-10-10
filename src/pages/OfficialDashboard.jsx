@@ -30,6 +30,7 @@ const OfficialDashboard = () => {
   useEffect(() => {
     const name = localStorage.getItem('user_name') || 'Hon. Representative';
     const role = localStorage.getItem('user_role') || 'OFFICIAL';
+    const userId = localStorage.getItem('user_id') || '';
     setProfile({ name, role });
 
     fetchComplaints();

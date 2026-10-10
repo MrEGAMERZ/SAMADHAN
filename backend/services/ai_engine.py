@@ -56,8 +56,8 @@ def analyze_complaint_ai(text: str, photo_urls: Optional[List[str]] = None) -> D
             "reasoning": "Failed to analyze via AI Provider."
         }
 
+
 def calculate_stars_rating(score: int, upvotes: int = 0) -> int:
-    """Calculate star priority rating (1 to 5 stars)."""
     base_stars = 1
     if score >= 90:
         base_stars = 5

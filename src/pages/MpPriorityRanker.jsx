@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Target, FileDown, RefreshCw, TrendingUp, Users, MapPin, Zap, Check, FileText } from 'lucide-react';
+
 import { api } from '../services/api';
 import '../pages/Dashboard.css';
 import { useToast } from '../components/Toast';
@@ -256,7 +257,7 @@ const MpPriorityRanker = () => {
                     <div>
                       <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', marginBottom: '4px' }}>CRITICALITY LEVEL</div>
                       <div style={{ display: 'inline-flex', marginTop: '2px' }}>
-                        <span className={`badge ${getCitBadge(project.criticality_max)}`}>{project.criticality_max}</span>
+                        <span className={`badge ${getCritBadge(project.criticality_max)}`}>{project.criticality_max}</span>
                       </div>
                     </div>
                   </div>

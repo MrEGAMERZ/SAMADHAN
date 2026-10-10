@@ -1,8 +1,8 @@
-# VANTA — Production-Ready Master Plan
+# SAMADHAN — Production-Ready Master Plan
 
 ## What You're Building
 
-**VANTA** is a **Governance Intelligence Platform** — an AI-powered civic grievance redressal system that connects **Citizens**, **Ward Officials (MLA)**, **District Collectors**, and **Members of Parliament** in a tiered accountability loop.
+**SAMADHAN** is a **Governance Intelligence Platform** — an AI-powered civic grievance redressal system that connects **Citizens**, **Ward Officials (MLA)**, **District Collectors**, and **Members of Parliament** in a tiered accountability loop.
 
 ```mermaid
 graph TD
@@ -232,13 +232,13 @@ Citizen-facing analytics dashboard:
 #### [MODIFY] [Portal.jsx](file:///c:/Users/mdawa/OneDrive/Desktop/codes/H2K/src/pages/Portal.jsx)
 - Design a premium landing page with:
   - Animated background gradient
-  - VANTA brand logo with glow effects
+  - SAMADHAN brand logo with glow effects
   - Animated statistics counter showing live complaint counts
   - Smooth card hover transitions
   - Footer with credits and version
 
 #### [NEW] `src/pages/NotFound.jsx`
-- Styled 404 page matching the dark VANTA theme
+- Styled 404 page matching the dark SAMADHAN theme
 - Animated glitch text effect
 - Quick navigation links back to portal
 

@@ -5,7 +5,7 @@ import {
   Home, AlertTriangle, Map, Play, ArrowRightLeft, AlertCircle, CheckCircle2
 } from 'lucide-react';
 import './ComplaintDetail.css';
-import './ComplaintDetail.css';
+
 import { api } from '../services/api';
 import { useToast } from '../components/Toast';
 
